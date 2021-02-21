@@ -1,3 +1,30 @@
+Hi,
+
+I just found some time to take a look on the code you have given to me.
+And I found that:
+
+Code is not following repository design pattern. It's also not following eloquent ORM.
+
+There are some places where we need to check whether the variable is set or not and also checking it's empty while it's not required.
+There we can use nullcoelscing operator.
+
+We also need to strictly follow the design pattern, if we need to use the repository pattern, then we should only do the repository pattern not the eloquent ORM.
+Some code that is written can not be used. Even code is not well commented no one can undertand easily.
+
+I just found time to edit booking controller file. And to write interfaces and remove some code from booking repository file. But I can not take a proper look on it due to time.
+The code can be improved and can use propertly repository pattern where it's required.
+
+Thanks
+
+
+
+
+
+
+
+
+
+===============================================================
 Choose ONE of the following tasks.
 Please do not invest more than 2-4 hours on this.
 Upload your results to a Github repo, for easier sharing and reviewing.

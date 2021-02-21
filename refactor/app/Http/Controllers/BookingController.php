@@ -6,7 +6,7 @@ use DTApi\Models\Job;
 use DTApi\Http\Requests;
 use DTApi\Models\Distance;
 use Illuminate\Http\Request;
-use DTApi\Repository\BookingRepository;
+use DTApi\Repository\BookingRepositoryInterface;
 
 /**
  * Class BookingController
@@ -24,7 +24,7 @@ class BookingController extends Controller
      * BookingController constructor.
      * @param BookingRepository $bookingRepository
      */
-    public function __construct(BookingRepository $bookingRepository)
+    public function __construct(BookingRepositoryInterface $bookingRepository)
     {
         $this->repository = $bookingRepository;
     }
@@ -196,25 +196,10 @@ class BookingController extends Controller
     {
         $data = $request->all();
 
-        if (isset($data['distance']) && $data['distance'] != "") {
-            $distance = $data['distance'];
-        } else {
-            $distance = "";
-        }
-        if (isset($data['time']) && $data['time'] != "") {
-            $time = $data['time'];
-        } else {
-            $time = "";
-        }
-        if (isset($data['jobid']) && $data['jobid'] != "") {
-            $jobid = $data['jobid'];
-        }
-
-        if (isset($data['session_time']) && $data['session_time'] != "") {
-            $session = $data['session_time'];
-        } else {
-            $session = "";
-        }
+        $distance = $data['distance'] ?? '';
+        $time = $data['time'] ?? '';
+        $jobid = $data['jobid'] ?? false;
+        $session = $data['session_time'] ?? '';
 
         if ($data['flagged'] == 'true') {
             if($data['admincomment'] == '') return "Please, add comment";
@@ -223,35 +208,38 @@ class BookingController extends Controller
             $flagged = 'no';
         }
         
+        // if it's a not a string then it can be modified to check whether value exist or not
         if ($data['manually_handled'] == 'true') {
             $manually_handled = 'yes';
         } else {
             $manually_handled = 'no';
         }
 
+        // if it's a not a string then it can be modified to check whether value exist or not
         if ($data['by_admin'] == 'true') {
             $by_admin = 'yes';
         } else {
             $by_admin = 'no';
         }
 
-        if (isset($data['admincomment']) && $data['admincomment'] != "") {
-            $admincomment = $data['admincomment'];
-        } else {
-            $admincomment = "";
-        }
-        if ($time || $distance) {
+        $admincomment = $data['admincomment'] ?? '';
 
+        $affectedRows = false;
+        $affectedRows1 = false;
+        if (($time || $distance) && $jobid) {
             $affectedRows = Distance::where('job_id', '=', $jobid)->update(array('distance' => $distance, 'time' => $time));
         }
 
         if ($admincomment || $session || $flagged || $manually_handled || $by_admin) {
-
             $affectedRows1 = Job::where('id', '=', $jobid)->update(array('admin_comments' => $admincomment, 'flagged' => $flagged, 'session_time' => $session, 'manually_handled' => $manually_handled, 'by_admin' => $by_admin));
 
         }
 
-        return response('Record updated!');
+        if ($affectedRows || $affectedRows1) {
+            return response()->json(['message' => 'Record updated!']);
+        }
+
+        return response()->json(['message' => 'Record not updated!']);
     }
 
     public function reopen(Request $request)
@@ -267,9 +255,10 @@ class BookingController extends Controller
         $data = $request->all();
         $job = $this->repository->find($data['jobid']);
         $job_data = $this->repository->jobToData($job);
-        $this->repository->sendNotificationTranslator($job, $job_data, '*');
+        // Notification should not send through repository pattern class, it should use notification class
+        // $this->repository->sendNotificationTranslator($job, $job_data, '*');
 
-        return response(['success' => 'Push sent']);
+        return response()->json(['success' => 'Push sent']);
     }
 
     /**
@@ -284,10 +273,11 @@ class BookingController extends Controller
         $job_data = $this->repository->jobToData($job);
 
         try {
-            $this->repository->sendSMSNotificationToTranslator($job);
-            return response(['success' => 'SMS sent']);
+            // Notifications should not be send using repository, should use laravel notifications
+            // $this->repository->sendSMSNotificationToTranslator($job);
+            return response()->json(['success' => 'SMS sent']);
         } catch (\Exception $e) {
-            return response(['success' => $e->getMessage()]);
+            return response()->json(['success' => $e->getMessage()]);
         }
     }
 
